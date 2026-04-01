@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  app:
+    build: ./app
+    container_name: natwest-app
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: transactions_db
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: mysql:8
+    container_name: natwest-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: transactions_db
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  prometheus:
+    image: prom/prometheus
+    container_name: natwest-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - app
+    restart: always
+
+  grafana:
+    image: grafana/grafana
+    container_name: natwest-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: always
+
+volumes:
+  grafana-storage:
